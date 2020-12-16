@@ -1,8 +1,8 @@
 # read in prokka table for WGS runs
 
-source("~/Documents/Eddi/funcsNscripts/readin_prokka_gff.R")
-source("~/Documents/Eddi/funcsNscripts/readin_prokka_tables.R")
-source("~/Documents/Eddi/funcsNscripts/readin_kraken2_contigs.R")
+source("~/Documents/Eddi/DFIutility/readin_prokka_gff.R")
+source("~/Documents/Eddi/DFIutility/readin_prokka_tables.R")
+source("~/Documents/Eddi/DFIutility/readin_kraken2_contigs.R")
 
 library(RPostgreSQL)
 library(tidyverse)
@@ -46,8 +46,13 @@ if (nrow(pann) > 0 & ldF){
 pseqs <- ptbls[[2]] %>%
   tibble() %>%
   select(-filename)
-dbWriteTable(con, "prokka_sequences", pseqs, row.names = F, append = T)
 
+if (nrow(pseqs) > 0 & ldF){
+ dbWriteTable(con, "prokka_sequences", pseqs, row.names = F, append = T)
+} else {
+
+ warning(">> Nothing to write for sequences!!")
+}
 # read in gff -------------------------------------------------------------
 
 gffcols <- tbl(con, "prokka_annotations_location") %>%
