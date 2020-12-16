@@ -10,7 +10,7 @@ inFilePath <- argopts[1]
 poolId <- basename(inFilePath)
 
 if (is.na(argopts[2])){
-  blF <- TRUE
+  blF <- FALSE
 } else {
   blF <- as.logical(argopts[2])
 }
