@@ -45,6 +45,7 @@ if (nrow(pann) > 0 & ldF){
 
 pseqs <- ptbls[[2]] %>%
   tibble() %>%
+  distinct(locus_tag, .keep_all = T) %>%
   select(-filename)
 
 if (nrow(pseqs) > 0 & ldF){
@@ -63,6 +64,7 @@ pgff <- readin_prokka_gff(file.path(path,"prokka"))
 cgff <- pgff %>%
   tibble() %>%
   filter(type != "gene") %>%
+  # distinct(locus_tag, .keep_all = T) %>%
   separate(filename, c("seq_id","trashfn"), remove = F, sep = "/") %>%
   # dplyr::count(type)
   select(all_of(gffcols))

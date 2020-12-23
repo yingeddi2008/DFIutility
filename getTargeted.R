@@ -4,15 +4,14 @@ sidx = as.numeric(argopts[2])
 
 if (is.null(argopts[3])){
    intermediate = F
-  } 
-else {
+  } else {
     intermediate = as.logic(argopts[3])
 }
 
 library(data.table)
 library(tidyverse)
 
-source("~/Documents/Eddi/funcsNscripts/readDiamond.R")
+source("~/Documents/Eddi/DFIutility/readDiamond.R")
 
 dmndfns <- Sys.glob(path)
 

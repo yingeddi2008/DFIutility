@@ -5,7 +5,7 @@ readin_kraken2_standard <- function(directory, recursive = T, saveIntermediate =
   
   print(paste0("Looking for kraken2 standard output to load..."))
   
-  files <- dir(path = directory, pattern="standard", recursive = recursive,)
+  files <- dir(path = directory, pattern="standard", recursive = recursive)
   dflist <- NULL
   
   print(paste0("Found ", length(files), " files to load..."))
