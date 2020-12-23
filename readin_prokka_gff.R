@@ -24,8 +24,7 @@ readin_prokka_gff <- function(directory, recursive=T){
                       "end", "score","strand", "phase",
                       "locus_tag","product","note",
                       "db_xref","gene", "eC_number"))) %>%
-      mutate(filename=gffs[i]) %>%
-      distinct(locus_tag, .keep_all = TRUE)
+      mutate(filename=gffs[i])
     
     df2 <- cbind(i,ncol(df))
     
