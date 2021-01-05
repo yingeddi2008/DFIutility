@@ -1,6 +1,8 @@
 readDiamond <- function(diaFn, ident = 80, ecut = 1e-5, qlenP = 0.8){
   require(data.table)
   require(tidyverse)
+
+  cat("loading ..", diaFn, "\n")
   
   tmp <- fread(diaFn, header = F, 
                col.names = c("qseqid","sseqid","pident","length","mismatch",

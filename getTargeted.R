@@ -2,18 +2,26 @@ argopts <- commandArgs(trailingOnly = TRUE)
 path = argopts[1]
 sidx = as.numeric(argopts[2])
 
-if (is.null(argopts[3])){
+if (is.na(argopts[3])){
    intermediate = F
+   cat("No intermediate files will be outputted!\n")
   } else {
-    intermediate = as.logic(argopts[3])
+   intermediate = as.logical(argopts[3])
+   if (intermediate) cat("Intermediate files will be outputted!\n")
 }
+
+# cat(intermediate)
 
 library(data.table)
 library(tidyverse)
 
 source("~/Documents/Eddi/DFIutility/readDiamond.R")
 
-dmndfns <- Sys.glob(path)
+dmndfns <- dir(path = path, pattern="dmnd", recursive = T, full.names = T)
+
+cat("Found ", length(dmndfns)," files to parse!\n")
+
+# dmndfns <- Sys.glob(path)
 
 tlist = NULL
 
