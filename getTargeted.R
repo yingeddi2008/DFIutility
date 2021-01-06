@@ -47,7 +47,7 @@ if (intermediate){
   }
 }
 
-big <- bind_rows(tlist) %>%
-  count(seq_id, dbsource, sseqid, slen, wt = rawCnt, name = "mappedReads")
+big <- dplyr::bind_rows(tlist) %>%
+  dplyr::count(seq_id, dbsource, sseqid, slen, wt = rawCnt, name = "mappedReads")
 
 saveRDS(big,"targeted.dnmd.rds")
