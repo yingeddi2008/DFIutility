@@ -23,7 +23,7 @@ readin_prokka_gff <- function(directory, recursive=T){
       dplyr::select(any_of(c("seqid","source","type","start", 
                       "end", "score","strand", "phase",
                       "locus_tag","product","note",
-                      "db_xref","gene", "eC_number"))) %>%
+                      "db_xref","gene", "eC_number","ID","Name"))) %>%
       mutate(filename=gffs[i])
     
     df2 <- cbind(i,ncol(df))
