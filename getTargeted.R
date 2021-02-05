@@ -18,16 +18,20 @@ library(tidyverse)
 source("~/Documents/Eddi/DFIutility/readDiamond.R")
 
 dmndfns <- dir(path = path, pattern="dmnd", recursive = T, full.names = T)
-
-cat("Found ", length(dmndfns)," files to parse!\n")
+nfn <- length(dmndfns)
+cat("Found ", nfn," files to parse!\n")
 
 # dmndfns <- Sys.glob(path)
 
 tlist = NULL
 
-for (d in dmndfns){
+for (i in 1:nfn){
+  d = dmndfns[i]
   
-  if (file.size(d) < 300) { next }   
+  if (file.size(d) < 300) { next } 
+  
+  cat(paste0("Progress: ",i,"/",nfn))
+  
   tmp <- readDiamond(d)
   
   if (is.null(tmp)) { next }
