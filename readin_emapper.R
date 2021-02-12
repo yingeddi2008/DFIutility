@@ -14,6 +14,7 @@ readin_emapper <- function(directory, recursive = F,
   eflist <- list()
   
   for (ef in efns){
+    cat("  >> Loading ", ef, " ...\n")
     eflist[[ef]] <- read_tsv(ef, comment = "#", 
                              col_names = c("query_name","seed_eggNOG_ortholog", "seed_ortholog_evalue",
                                            "seed_ortholog_score","best_tax_level","Preferred_name",
@@ -21,7 +22,8 @@ readin_emapper <- function(directory, recursive = F,
                                            "KEGG_rclass","BRITE","KEGG_TC",
                                            "CAZy","BiGG_Reaction","taxonomic scope",
                                            "eggNOG OGs","best eggNOG OG","COG Functional cat.",
-                                           "eggNOG free text desc.")) %>%
+                                           "eggNOG free text desc."),
+                             col_types = "ccnncccccccccccccccccc") %>%
       mutate(sample = gsub(pattern = pattern,"",basename(ef)))
   }
   
