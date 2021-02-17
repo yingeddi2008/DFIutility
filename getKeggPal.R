@@ -1,10 +1,51 @@
-getKeggPal <- function (keggtax, rn = 2) {
+getKeggPal <- function(keggtax, rn = 2, legend = F) {
   
   require(yingtools2)
   require(tidyverse)
   require(assertive.types)
   require(assertive.base)
+
+# hard code color and rank1 values ----------------------------------------
   
+  basecols <- tibble(rank1 = c('09180 Brite Hierarchies','09100 Metabolism',
+                               '09190 Not Included in Pathway or Brite',
+                               '09120 Genetic Information Processing',
+                               '09130 Environmental Information Processing',
+                               '09140 Cellular Processes',
+                               '09160 Human Diseases',
+                               '09150 Organismal Systems'),
+                     col = c('#1F77B4FF','#FF7F0EFF','#2CA02CFF','#D62728FF',
+                             '#9467BDFF','#8C564BFF','#E377C2FF','#17BECFFF'))
+  
+  baseplt <- basecols %>%
+    group_by(rank1) %>%
+    mutate(cols = list(shades(col, variation = 0.25, ncolor = 3)),
+           order = list(c(1,2,3))) %>%
+    unnest(c("cols","order")) 
+  
+  basepal <- structure(baseplt$cols, names = baseplt$cols)
+  
+  lg <- baseplt %>%
+    ggplot(aes(order, rank1)) +
+    geom_tile(aes(fill = cols)) +
+    scale_fill_manual(values = basepal) +
+    theme_minimal() +
+    labs(x = "", y = "") +
+    theme(axis.text.x = element_blank(),
+          legend.position = "none",
+          axis.text.y = element_text(size = 17),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank()) +
+    scale_y_discrete(position = "right")
+
+# legend output ------------------------------------------------------------
+  legend <- assert_is_logical(legend)
+  if (legend) { 
+    return(lg)
+  }
+
+# argument checks ---------------------------------------------------------
+
   rn <- assert_is_a_number(rn)
   
   if ( between(rn, 2,4) ){
@@ -37,16 +78,6 @@ getKeggPal <- function (keggtax, rn = 2) {
   # ) %>%
   #   dplyr::slice(1:paln)
   
-  basecols <- tibble(rank1 = c('09180 Brite Hierarchies','09100 Metabolism',
-                      '09190 Not Included in Pathway or Brite',
-                      '09120 Genetic Information Processing',
-                      '09130 Environmental Information Processing',
-                      '09140 Cellular Processes',
-                      '09160 Human Diseases',
-                      '09150 Organismal Systems'),
-                     col = c('#1F77B4FF','#FF7F0EFF','#2CA02CFF','#D62728FF',
-                     '#9467BDFF','#8C564BFF','#E377C2FF','#17BECFFF'))
-  
   ranks <- paste0("rank",c(1:rn))
   rlast <- ranks[length(ranks)]
   
@@ -57,7 +88,6 @@ getKeggPal <- function (keggtax, rn = 2) {
   kdict <- keggtax[, ranks] %>% distinct()
   
   # start out as all gray
-  
   others <- kdict %>%
     filter(! rank1 %in% basecols$rank1 ) 
   
