@@ -63,10 +63,10 @@ getRdpPal <- function(tax) {
     )) %>%
     # left_join(genpal) %>%
     mutate(color = case_when(
-      !is.na(phycol) ~ phycol,
-      !is.na(ordcol) ~ ordcol,
-      !is.na(famcol) ~ famcol,
       !is.na(gencol) ~ gencol,
+      !is.na(famcol) ~ famcol,
+      !is.na(ordcol) ~ ordcol,
+      !is.na(phycol) ~ phycol,
       TRUE ~ color) 
       ) %>%
     select(Kingdom:Genus, color) %>%
