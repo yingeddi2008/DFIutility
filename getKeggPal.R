@@ -7,14 +7,14 @@ getKeggPal <- function(keggtax, rn = 2, legend = F) {
 
 # hard code color and rank1 values ----------------------------------------
   
-  basecols <- tibble(rank1 = c('09180 Brite Hierarchies','09100 Metabolism',
+  basecols <- tibble(rank1 = c('09100 Metabolism',
                                '09190 Not Included in Pathway or Brite',
                                '09120 Genetic Information Processing',
                                '09130 Environmental Information Processing',
                                '09140 Cellular Processes',
                                '09160 Human Diseases',
                                '09150 Organismal Systems'),
-                     col = c('#1F77B4FF','#FF7F0EFF','#2CA02CFF','#D62728FF',
+                     col = c('#FF7F0EFF','#dae0eb','#2CA02CFF',
                              '#9467BDFF','#8C564BFF','#E377C2FF','#17BECFFF'))
   
   baseplt <- basecols %>%
