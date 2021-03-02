@@ -1,11 +1,11 @@
 #readin kraken2 function
 readin_kraken2_contigs <- function(directory){
-  setwd(directory)
+  
   files <- dir(pattern="standard")
   dflist <- NULL
   for(i in 1:length(files)) {
     print(i)
-    int <- fread(files[i]) %>%
+    int <- fread(file.path(directory,files[i])) %>%
       mutate(filename=files[i])
     
     dflist[[i]] <- int
