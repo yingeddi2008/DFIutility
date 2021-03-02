@@ -1,7 +1,7 @@
 #readin kraken2 function
 readin_kraken2_contigs <- function(directory){
   
-  files <- dir(pattern="standard")
+  files <- dir(directory, pattern="standard")
   dflist <- NULL
   for(i in 1:length(files)) {
     print(i)
