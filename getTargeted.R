@@ -30,7 +30,7 @@ for (i in 1:nfn){
   
   if (file.size(d) < 300) { next } 
   
-  cat(paste0("Progress: ",i,"/",nfn))
+  cat(paste0("Progress: ",i,"/",nfn，". "))
   
   tmp <- readDiamond(d)
   
