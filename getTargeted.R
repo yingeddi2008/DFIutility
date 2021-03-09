@@ -1,6 +1,11 @@
 argopts <- commandArgs(trailingOnly = TRUE)
 path = argopts[1]
-sidx = as.numeric(argopts[2])
+
+if (is.na(argopts[2])){
+   sidx = 8
+  } else {
+   sidx = as.numeric(argopts[2])
+}
 
 if (is.na(argopts[3])){
    intermediate = F
@@ -30,7 +35,7 @@ for (i in 1:nfn){
   
   if (file.size(d) < 300) { next } 
   
-  cat(paste0("Progress: ",i,"/",nfn，". "))
+  cat(paste0("Progress: ",i,"/",nfn, ". "))
   
   tmp <- readDiamond(d)
   
