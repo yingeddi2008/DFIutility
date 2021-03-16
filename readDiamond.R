@@ -4,6 +4,11 @@ readDiamond <- function(diaFn, ident = 80, ecut = 1e-5, qlenP = 0.8){
 
   cat("loading ..", diaFn, "\n")
   
+  if (file.size(diaFn) < 500 ){
+    warning("Skipping ", diaFn, " due to small file size!")
+    return()
+  }
+  
   tmp <- fread(diaFn, header = F, 
                col.names = c("qseqid","sseqid","pident","length","mismatch",
                              "gapoen","qstart","qend","sstart","send",
