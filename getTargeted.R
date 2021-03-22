@@ -20,7 +20,9 @@ if (is.na(argopts[3])){
 library(data.table)
 library(tidyverse)
 
-source("~/Documents/Eddi/DFIutility/readDiamond.R")
+try(source("~/Documents/Eddi/DFIutility/readDiamond.R"))
+try(source("~/OneDrive - The University of Chicago/DFIutility/readDiamond.R"))
+
 
 dmndfns <- dir(path = path, pattern="dmnd", recursive = T, full.names = T)
 nfn <- length(dmndfns)
