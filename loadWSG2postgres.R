@@ -34,10 +34,12 @@ pann <- ptbls[[1]] %>%
   separate(filename, c("seq_id","trashfn"), remove = F, sep = "/") %>%
   mutate(trashfn = NULL) 
 
+
 if (nrow(pann) > 0 & ldF){
   dbWriteTable(con, "prokka_annotations", pann, row.names = F, append = T)
 } else {
   warning(">> Nothing to write for annotation!!")
+  saveRDS(pann, "prokka_annotations.rds")
 }
 
 # load sequences ----------------------------------------------------------
@@ -53,6 +55,7 @@ if (nrow(pseqs) > 0 & ldF){
 } else {
 
  warning(">> Nothing to write for sequences!!")
+ saveRDS(pseqs, "prokka_sequences.rds")
 }
 # read in gff -------------------------------------------------------------
 
@@ -73,6 +76,7 @@ if (nrow(cgff) > 0 & ldF){
   dbWriteTable(con, "prokka_annotations_location", cgff, row.names = F, append = T)
 } else {
   warning(">> Nothing to write for gff information!!")
+  saveRDS(cgff, "prokka_annotations_location.rds")
 }
 
 
@@ -139,11 +143,12 @@ blast <- readr::read_delim("temp.16S.blastn", delim = "\t",
   
 # load kraken2 -------------------------------------------
 kraken2 <- readin_kraken2_contigs(file.path(path,"kraken2"))
-if(nrow(kraken2) >0 & ldF){
+if(nrow(kraken2) > 0 & ldF){
   print("appending kraken2 contigs")
   dbWriteTable(con,"kraken2_contigs",kraken2,row.names=F,append=T)
 }else{
   print("no kraken2 contigs to append")
+  saveRDS(kraken2, "kraken2_contigs.rds")
 }
 
 # disconnect postgres ------------------------------------
