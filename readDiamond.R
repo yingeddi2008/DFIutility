@@ -19,17 +19,22 @@ readDiamond <- function(diaFn, ident = 80, ecut = 1e-5, qlenP = 0.8){
     
     if (nrow(filint) > 0) {
       
-      filint %>%
+      out <- filint %>%
         group_by(qseqid) %>%
         top_n(1, wt = bitscore) %>%
         top_n(1, wt = pident) %>%
         top_n(-1, wt = evalue) %>%
         add_count(sseqid, name = "swt") %>%
         sample_n(1, weight = swt)
+      
+      return(out)
     }
     
   } else {
+    
     warning("Skipping ", diaFn, " due to small file size!")
+    
+    return(NULL)
   }
 
 
