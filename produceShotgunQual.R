@@ -26,8 +26,11 @@ cat("Saving out trimStats.rds for future postgres loading...\n")
 saveRDS(trimclean,"trimStats.rds")
 
 trimclean %>% 
-  filter(grepl("final pair", countType)) %>%
-  select(seq_id, countType, count) 
+  filter(grepl("[finlraw] pair", countType)) %>%
+  select(-description) %>%
+  spread(countType, count) %>%
+  summarise_at(vars("final pair","raw pair"), 
+               list(mean=mean, median = median))
 
 plt <- trimclean %>%
   filter(grepl("pair",countType)) %>%
