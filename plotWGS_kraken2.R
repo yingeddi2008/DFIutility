@@ -1,5 +1,6 @@
 argoptions <- commandArgs(trailingOnly = TRUE)
-runid <- argoptions[1]
+runid <- argoptions[1] 
+localF <- as.logical(argoptions[2])
 
 library(RPostgreSQL)
 library(tidyverse)
@@ -10,12 +11,17 @@ con <- dbConnect(dbDriver("PostgreSQL"),
                  use="ericlittmann",
                  password="dfibugs")
 
-dbListTables(con)
+# dbListTables(con)
 
-tax <- tbl(con, "kraken2_contigs") %>%
-  filter(grepl(runid,seq_id)) %>%
-  collect() 
+if (localF ){
+  tax <- readRDS("kraken2_contigs.rds")
+} else {
+  tax <- tbl(con, "kraken2_contigs") %>%
+    filter(grepl(runid,seq_id)) %>%
+    collect() 
+}
 
+cat("Loading NCBI taxdump...\n")
 taxmap <- tbl(con, "ncbi_blast_taxdump") %>%
   collect()
 
@@ -39,7 +45,7 @@ source("~/OneDrive - The University of Chicago/DFIutility/getRdpPal.R")
 
 taxpal <- getRdpPal(t)
 
-scales::show_col(unique(taxpal))  
+# scales::show_col(unique(taxpal))  
 
 t %>%
   arrange(Kingdom, Phylum, Class, Order, Family, Genus) %>% 
