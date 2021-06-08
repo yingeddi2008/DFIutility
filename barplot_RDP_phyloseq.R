@@ -94,11 +94,9 @@ if (length(unique(t$group)) > 1){
            y.text = (cum.pct + c(0, cum.pct[-length(cum.pct)]))/2) %>% 
     ungroup() %>%
     dplyr::select(-cum.pct) %>% 
-    mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
-      tax.label= if_else(grepl("unclassified",Genus), 
-                         "unclassified",
-                         as.character(Genus))) %>%
-    mutate(tax.label = if_else(pctseqs >= .1, tax.label, "")) %>%
+  mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
+    tax.label=ifelse(Genus=="unclassified",paste(Family,Genus,sep="\n"),Genus), 
+    tax.label = ifelse(pctseqs >= .1, as.character(Genus), "")) %>%
     left_join(totals) %>%
     ggplot(aes(x=sample,y=pctseqs)) +
     geom_bar(aes(fill=Genus),stat="identity") +
@@ -158,10 +156,9 @@ if (length(unique(t$group)) > 1){
            y.text = (cum.pct + c(0, cum.pct[-length(cum.pct)]))/2) %>% 
     ungroup() %>%
     dplyr::select(-cum.pct) %>% 
-    mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
-      tax.label= if_else(grepl("unclassified",Genus), 
-                         "unclassified",
-                         as.character(Genus))) %>%
+  mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
+    tax.label=ifelse(Genus=="unclassified",paste(Family,Genus,sep="\n"),Genus), 
+    tax.label = ifelse(pctseqs >= .1, as.character(Genus), "")) %>%
     mutate(tax.label = if_else(pctseqs >= .1, tax.label, "")) %>%
     left_join(totals) %>%
     ggplot(aes(x=sample,y=pctseqs)) +
