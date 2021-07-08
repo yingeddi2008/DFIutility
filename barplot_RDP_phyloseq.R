@@ -5,13 +5,49 @@ library(data.table)
 library(grid)
 library(gridExtra)
 library(phyloseq)
+library(stringr)
 
 source("/Volumes/pamer-lab/Eric.Littmann/R_reference_files/prokka_functions_EL_REF.R")
 
 opts <- commandArgs(trailingOnly = TRUE)
 
 inFilePath <- opts
-poolID <- str_split(tail(str_split(inFilePath,"/")[[1]],1),"\\.")[[1]][1]
+
+# Make the poolID flexible for SM or MMF runpools
+poolID <- ifelse(test = grepl(pattern = "MMF.16S.", x = inFilePath),
+                 yes = paste(
+                   paste(str_extract_all(inFilePath, pattern = "(MMF.16S.[0-9]+)")[[1]], collapse = "_"),
+                   gsub(pattern = ".final",replacement = "", str_extract(pattern = "[A-Za-z]+\\.final", inFilePath)
+                   ), sep = "_"
+                 ),
+                 no = str_split(tail(str_split(inFilePath,"/")[[1]],1),"\\.")[[1]][1]
+)
+
+# MMF inFilePath test
+# inFilePath_mmf <- "MMF.16S.100_MMF.16S.101_SamLight.finalPhy_rdp.rds"
+
+# SM inFilePath test
+# inFilePath_sm <-"SM100_SM101_SamLight.finalPhy_rdp.rds"
+
+# SM test
+# poolID <- ifelse(test = grepl(pattern = "^MMF.16S.", x = inFilePath_sm),
+#                yes = paste(paste(str_extract_all(inFilePath_sm, pattern = "(MMF.16S.[0-9]+)")[[1]], collapse = "_"),
+#                       gsub(pattern = ".final",replacement = "",str_extract(pattern = "[A-Za-z]+\\.final", inFilePath_sm
+#                                                                            )
+#                            ), sep = "_"
+#                       ),
+#                 no = str_split(tail(str_split(inFilePath_sm,"/")[[1]],1),"\\.")[[1]][1]
+#                 )
+#
+# MMF test
+# poolID <- ifelse(test = grepl(pattern = "^MMF.16S.", x = inFilePath_mmf),
+#                 yes = paste(paste(str_extract_all(inFilePath_mmf, pattern = "(MMF.16S.[0-9]+)")[[1]], collapse = "_"),
+#                             gsub(pattern = ".final",replacement = "",str_extract(pattern = "[A-Za-z]+\\.final", inFilePath_mmf
+#                             )
+#                             ), sep = "_"
+#                 ),
+#                 no = str_split(tail(str_split(inFilePath_mmf,"/")[[1]],1),"\\.")[[1]][1]
+#)
 
 calWidth <- function(nsamples){ return(3 + 0.28*nsamples) }
 
@@ -58,11 +94,9 @@ if (length(unique(t$group)) > 1){
            y.text = (cum.pct + c(0, cum.pct[-length(cum.pct)]))/2) %>% 
     ungroup() %>%
     dplyr::select(-cum.pct) %>% 
-    mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
-      tax.label= if_else(grepl("unclassified",Genus), 
-                         "unclassified",
-                         as.character(Genus))) %>%
-    mutate(tax.label = if_else(pctseqs >= .1, tax.label, "")) %>%
+  mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
+    tax.label=ifelse(Genus=="unclassified",paste(Family,Genus,sep="\n"),Genus), 
+    tax.label = ifelse(pctseqs >= .1, as.character(Genus), "")) %>%
     left_join(totals) %>%
     ggplot(aes(x=sample,y=pctseqs)) +
     geom_bar(aes(fill=Genus),stat="identity") +
@@ -93,7 +127,7 @@ if (length(unique(t$group)) > 1){
     theme(axis.text.x=element_text(angle=90, vjust = 0.5, hjust = 1 )) +
     facet_grid(. ~ group, scales = "free",space = "free") +
     scale_y_log10()
-
+  
   
   pdf(file = file.path(outFilePath,paste0(poolID,"_rdp_barplot_ind.pdf")),
       height = 8, width = wd)
@@ -122,10 +156,9 @@ if (length(unique(t$group)) > 1){
            y.text = (cum.pct + c(0, cum.pct[-length(cum.pct)]))/2) %>% 
     ungroup() %>%
     dplyr::select(-cum.pct) %>% 
-    mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
-      tax.label= if_else(grepl("unclassified",Genus), 
-                         "unclassified",
-                         as.character(Genus))) %>%
+  mutate(#tax.label=ifelse(Species=="unclassified",paste(Family,Genus,Species,sep="\n"),paste(Genus,Species,sep="\n")),
+    tax.label=ifelse(Genus=="unclassified",paste(Family,Genus,sep="\n"),Genus), 
+    tax.label = ifelse(pctseqs >= .1, as.character(Genus), "")) %>%
     mutate(tax.label = if_else(pctseqs >= .1, tax.label, "")) %>%
     left_join(totals) %>%
     ggplot(aes(x=sample,y=pctseqs)) +
