@@ -11,9 +11,9 @@ library(data.table)
 argopts <- commandArgs(trailingOnly = TRUE) 
 path = argopts[1]
 con <- dbConnect(dbDriver("PostgreSQL"),
-                 host = "128.135.41.183",
+                 host = "128.135.41.32",
                  dbname="dfi_commensal_library",
-                 use="ericlittmann",
+                 use="dfi_admin",
                  password="dfibugs")
 
 # dbListTables(con) %>% sort()
