@@ -140,7 +140,11 @@ redcap_wrapper <- function(directory){
   ld <- redcap_ld(directory)
   total <- lt %>% 
     bind_rows(micu, ht, ld) %>% 
-    mutate(sampleid = gsub(pattern = " ", replacement = "", sampleid))
+    mutate(sampleid = gsub(pattern = " ", replacement = "", sampleid)) %>% 
+    separate(sampleid, c("LD", "subn", "tp"), convert = T, remove = F) %>%
+    mutate(ID = paste0(LD, "-", formatC(subn, width = 3, flag = "0"),".",
+                       formatC(tp, width = 2, flag = "0"))) %>% 
+    select(-c(LD,subn,tp))
   
   return(total)
 }
@@ -163,8 +167,7 @@ bile <- tbl(con, "bile_v3") %>% collect()
 scfa <- tbl(con, "scfa_v3") %>% collect()
 
 shotgun_lookup <- redcap_tables %>% 
-  rename(ID = sampleid) %>% 
-  left_join(lookup, by = "ID") %>% 
+  full_join(lookup, by = "ID") %>% 
   dplyr::rename(shotgunSeq_id = seq_id)
 
 
@@ -173,6 +176,8 @@ phy <- readRDS("/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/finalPh
 
 subphy <- subset_samples(phy, grepl("_[MICUHLDT\\.\\_\\-]{3,}[0-9]{2}", 
                                       sample_names(phy)))
+
+# temp <- as_tibble(sample_names(subphy))
 
 subphy2 <- subset_samples(subphy, !grepl("CC",sample_names(subphy)))
 
@@ -192,8 +197,8 @@ phy_lookup <- sample_data(subphy2) %>%
 
 
 # join shotgun data with 16s data
-redcap_genomics <- shotgun_lookup %>% 
-  full_join(phy_lookup) 
+redcap_genomics <- phy_lookup %>% 
+  full_join(shotgun_lookup) 
 
 
 # join metabolomics (bile acid and pfbbr) and clean-up some errant metabolomicsIDs
@@ -216,24 +221,16 @@ metab <- tibble(metabolomicsID = unique(c(unique(bile$metabolomicsID), unique(sc
   select(metabolomicsID, ID)
 
 # join all metabolomics and genomics lookups and clean up some syntax
-redcap_genomics_metab <- redcap_tables %>% 
-  separate(sampleid, c("LD", "subn", "tp"), convert = T, remove = F) %>%
-  mutate(ID = paste0(LD, "-", formatC(subn, width = 3, flag = "0"),".",
-                     formatC(tp, width = 2, flag = "0"))) %>%
-  select(-LD, -subn, -tp) %>% 
-  left_join(lookup, by = "ID") %>% 
-  rename(shotgunSeq_id = seq_id) %>% 
-  left_join(redcap_genomics) %>% 
-  mutate(sampletype = tolower(sampletype),
-         sampletype = gsub(pattern = " ", replacement = "", sampletype)) %>% 
-  left_join(metab)
+redcap_genomics_metab <- redcap_genomics %>%
+  full_join(metab, by = "ID") %>% 
+  mutate(sampletype = tolower(sampletype))
 
 
 #  Re-write table to redcap
-# dbWriteTable(con, "redcap_tbl_v3", redcap_genomics_metab, 
+# dbWriteTable(con, "redcap_tbl_v3", redcap_genomics_metab,
 #              row.names = F, append = F, overwrite = T)
-# dbSendStatement(con, "GRANT SELECT ON redcap_tbl TO dfi_lab")
-# dbSendStatement(con, "GRANT SELECT ON redcap_tbl TO dfi_user")
+# dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_lab")
+# dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_user")
 
 # load redcap table
 temp <- tbl(con, "redcap_tbl_v3") %>% collect()
