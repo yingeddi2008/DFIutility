@@ -151,7 +151,6 @@ redcap_wrapper <- function(directory){
 
 redcap_tables <- redcap_wrapper(directory = "~/Box/Erics_Stuff/Clinical_Data/20210709_redcap/")
 
-
 # Establish connection with Postgres
 con <- dbConnect(dbDriver("PostgreSQL"),
                  host="128.135.41.32",
@@ -170,18 +169,17 @@ shotgun_lookup <- redcap_tables %>%
   full_join(lookup, by = "ID") %>% 
   dplyr::rename(shotgunSeq_id = seq_id)
 
-
-
+# load most recent 16s phyloseq object
 phy <- readRDS("/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/finalPhy_rdp.merged.wMeta.rds")
 
-subphy <- subset_samples(phy, grepl("_[MICUHLDT\\.\\_\\-]{3,}[0-9]{2}", 
-                                      sample_names(phy)))
+subphy <- subset_samples(phy, grepl("_[MICU\\.\\_\\-]{3,}[0-9]{2}", sample_names(phy)) | 
+                           grepl("_[UC\\.\\_\\-]{3,}[0-9]{2}",  sample_names(phy)) | 
+                           grepl("_[HT\\.\\_\\-]{3,}[0-9]{2}",  sample_names(phy)) |
+                           grepl("_[LD\\.\\_\\-]{3,}[0-9]{2}", sample_names(phy)))
 
-# temp <- as_tibble(sample_names(subphy))
+# tmp16s <- as_tibble(sample_names(subphy))
 
 subphy2 <- subset_samples(subphy, !grepl("CC",sample_names(subphy)))
-
-
 
 phy_lookup <- sample_data(subphy2) %>%
   data.frame() %>%
@@ -195,15 +193,14 @@ phy_lookup <- sample_data(subphy2) %>%
   mutate(ID = paste0(study, "-",subj, ".", tp)) %>%
   select(MiSeq_id, ID)
 
-
 # join shotgun data with 16s data
 redcap_genomics <- phy_lookup %>% 
   full_join(shotgun_lookup) 
 
-
 # join metabolomics (bile acid and pfbbr) and clean-up some errant metabolomicsIDs
-metab <- tibble(metabolomicsID = unique(c(unique(bile$metabolomicsID), unique(scfa$metabolomicsID)))) %>% 
+metab <- tibble(metabolomicsID = unique(c(bile$metabolomicsID,scfa$metabolomicsID))) %>% 
   mutate(metabolomicsID_corrected = gsub(pattern = " ", replacement = "", metabolomicsID),
+         metabolomicsID_corrected = gsub(pattern = "[a-z]+$", replacement = "", metabolomicsID_corrected),
          metabolomicsID_corrected = case_when(metabolomicsID_corrected == "HT_005_01_RI"~"HT_005_01",
                                               metabolomicsID_corrected == "U_C_003_05"~"UC_003_05",
                                               metabolomicsID_corrected == "U_C_003_06"~"UC_003_06",
@@ -225,15 +222,16 @@ redcap_genomics_metab <- redcap_genomics %>%
   full_join(metab, by = "ID") %>% 
   mutate(sampletype = tolower(sampletype))
 
-
 #  Re-write table to redcap
-# dbWriteTable(con, "redcap_tbl_v3", redcap_genomics_metab,
-#              row.names = F, append = F, overwrite = T)
-# dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_lab")
-# dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_user")
+dbWriteTable(con, "redcap_tbl_v3", redcap_genomics_metab,
+             row.names = F, append = F, overwrite = T)
+dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_lab")
+dbSendStatement(con, "GRANT SELECT ON redcap_tbl_v3 TO dfi_user")
+
+dbDisconnect(con)
 
 # load redcap table
-temp <- tbl(con, "redcap_tbl_v3") %>% collect()
+# temp <- tbl(con, "redcap_tbl_v3") %>% collect()
 
 
 
