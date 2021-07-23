@@ -1,4 +1,4 @@
-readin_prokka_gff <- function(directory, recursive=T){
+readin_prokka_gff <- function(directory){
   require(tidyverse)
   require(reshape2)
   require(rtracklayer)
@@ -9,16 +9,16 @@ readin_prokka_gff <- function(directory, recursive=T){
   
   print(paste0("Looking for GFF files to load..."))
   
-  gffs <- dir(path = directory, recursive = recursive,pattern="gff$")
+  gffs <- Sys.glob(file.path(directory,"*/*gff"))
   dflist <- NULL
   col_list <- NULL
   
   print(paste0("Found ", length(gffs), " files to load..."))
   
   for(i in 1:length(gffs)){
-    print(paste0("loading ... ", file.path(directory,gffs[i])))
+    print(paste0("loading ... ", file.path(gffs[i])))
     #i=1
-    df <- readGFF(file.path(directory,gffs[i])) %>% 
+    df <- readGFF(file.path(gffs[i])) %>% 
       as.data.frame() %>%
       dplyr::select(any_of(c("seqid","source","type","start", 
                       "end", "score","strand", "phase",
