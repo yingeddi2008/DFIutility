@@ -80,30 +80,6 @@ if (nrow(cgff) > 0 & ldF){
 }
 
 
-# look up table -----------------------------------------------------------
-lkcls <- tbl(con, "lookup_table") %>%
-  colnames()
-
-morelk <- tibble(seq_id = unique(pann$seq_id)) %>%
-  mutate(interid = gsub("^EP-[0-9]+[a-zA-Z]?-","", seq_id),
-         msk_id = gsub("-|-0",".",interid),
-         interid = gsub("-[0-9]+$","",interid)) %>%
-  separate(interid, c("pre","num"), convert = T) %>%
-  mutate(num = formatC(num, width = 4, flag = "0"),
-         donor_id = paste0(pre,num),
-         pre = NULL, num = NULL,
-         cmic_id = NA_character_,
-         genome_id = NA_real_) %>%
-  select(all_of(lkcls))
-
-morelk
-
-# if (nrow(morelk) > 0 & ldF ){
-#  dbWriteTable(con, "lookup_table", morelk, row.names = F, append = T)
-#} else {
-#  warning(">> Nothing to write for lookup table!!")
-#}
-
 # every 16S gene annotation ---------------------------------------------
 rnaref <- "/home/pamerlab/Documents/Eddi/refseq_rna/refseq_rna"
 
