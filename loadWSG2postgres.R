@@ -31,8 +31,7 @@ ptbls <- readin_prokka_tables(file.path(path,"prokka"))
 pann <- ptbls[[1]] %>%
   tibble() %>%
   filter(ftype != "gene") %>%
-  separate(filename, c("seq_id","trashfn"), remove = F, sep = "/") %>%
-  mutate(trashfn = NULL) 
+  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1])) 
 
 
 if (nrow(pann) > 0 & ldF){
@@ -68,7 +67,7 @@ cgff <- pgff %>%
   tibble() %>%
   filter(type != "gene") %>%
   # distinct(locus_tag, .keep_all = T) %>%
-  separate(filename, c("seq_id","trashfn"), remove = F, sep = "/") %>%
+  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1])) %>% 
   # dplyr::count(type)
   select(all_of(gffcols))
 
