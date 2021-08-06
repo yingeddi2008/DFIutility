@@ -43,8 +43,8 @@ getRdpPal <- function(tax) {
                    phycol = c("red","#A77097","#51AB9B"))
   ordpal <- tibble(Order = c("Clostridiales"),
                    ordcol = c("#9C854E"))
-  fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Erysipelotrichaceae"),
-                   famcol = c("#EC9B96","#9AAE73","orange"))
+  fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Oscillospiraceae","Erysipelotrichaceae"),
+                   famcol = c("#EC9B96","#9AAE73","#9AAE73","orange"))
   genpal <- tibble(Genus = c("Enterococcus","Streptococcus","Staphylococcus",
                              "Lactobacillus"),
                    gencol = c("#129246","#9FB846","#f1eb25", "#3b51a3"))
@@ -71,7 +71,6 @@ getRdpPal <- function(tax) {
       ) %>%
     select(Kingdom:Genus, color) %>%
     group_split(color)
-    
 
     tax.color <- bind_rows(lapply(tax.split,getShades))
     tax.palette <- structure(tax.color$cols, names = as.character(tax.color$Genus))
