@@ -1,11 +1,11 @@
-readin_kraken2_standard <- function(directory, recursive = T, saveIntermediate = F){
+readin_kraken2_standard <- function(directory, saveIntermediate = F){
   
   require(data.table)
   require(tidyverse)
   
   print(paste0("Looking for kraken2 standard output to load..."))
   
-  files <- Sys.glob(file.path(directory, "*standard.txt"))
+  files <- Sys.glob(file.path(directory, "*standard.txt"), dirmark = T)
   
   dflist <- NULL
   
