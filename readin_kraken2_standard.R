@@ -5,7 +5,7 @@ readin_kraken2_standard <- function(directory, saveIntermediate = F){
   
   print(paste0("Looking for kraken2 standard output to load..."))
   
-  files <- Sys.glob(file.path(directory, "*standard.txt"), dirmark = T)
+  files <- Sys.glob(file.path(directory, "*.standard.txt"), dirmark = T)
   
   dflist <- NULL
   
