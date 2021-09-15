@@ -43,8 +43,9 @@ getRdpPal <- function(tax) {
                    phycol = c("red","#A77097","#51AB9B"))
   ordpal <- tibble(Order = c("Clostridiales"),
                    ordcol = c("#9C854E"))
-  fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Oscillospiraceae","Erysipelotrichaceae"),
-                   famcol = c("#EC9B96","#9AAE73","#9AAE73","orange"))
+  fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Oscillospiraceae","Erysipelotrichaceae",
+                              "Lactobacillaceae"),
+                   famcol = c("#EC9B96","#9AAE73","#9AAE73","orange","#3b51a3"))
   genpal <- tibble(Genus = c("Enterococcus","Streptococcus","Staphylococcus",
                              "Lactobacillus"),
                    gencol = c("#129246","#9FB846","#f1eb25", "#3b51a3"))
@@ -58,7 +59,6 @@ getRdpPal <- function(tax) {
       grepl("Enterococcus$", Genus) ~ "#129246",
       grepl("Streptococcus$", Genus) ~ "#9FB846",
       grepl("Staphylococcus$", Genus) ~ "#f1eb25",
-      grepl("Lactobacillus$", Genus) ~ "#3b51a3",
       TRUE ~ NA_character_
     )) %>%
     # left_join(genpal) %>%
