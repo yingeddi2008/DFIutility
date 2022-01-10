@@ -6,9 +6,9 @@ library(RPostgreSQL)
 library(tidyverse)
 
 con <- dbConnect(dbDriver("PostgreSQL"),
-                 host = "128.135.41.183",
+                 host = "128.135.41.32",
                  dbname="dfi_commensal_library",
-                 use="ericlittmann",
+                 use="dfi_lab",
                  password="dfibugs")
 
 # dbListTables(con)
@@ -41,6 +41,10 @@ t <- tax %>%
   mutate(genLab = Genus,
          Genus = paste0(Phylum, "-", Class, "-", Order, "-", Family, "-", Genus))
 
+nsas <- t %>% 
+  dplyr::count(seq_id) %>% 
+  nrow()
+
 source("~/OneDrive - The University of Chicago/DFIutility/getRdpPal.R")
 
 taxpal <- getRdpPal(t)
@@ -64,8 +68,9 @@ t %>%
   geom_col(aes(fill = Genus)) +
   scale_fill_manual(values = taxpal) +
   theme(legend.position = "none",
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6.5)) +
   geom_text(aes(y=1-y.text,x=seq_id,label=tax.label),lineheight=0.6,size=2.5, angle = 90) +
-  labs(y = "contig length % abundance", title = "kraken2 taxonomy") 
+  labs(y = "contig length % abundance", title = "kraken2 taxonomy",
+       caption = paste0("# of isolates: ", nsas)) 
 
-ggsave(paste0(runid,".isolate.kraken2.pdf"), height = 6, width = 8.50)
+ggsave(paste0(runid,".isolate.kraken2.pdf"), height = 6, width = nsas*0.09 + 2.85)
