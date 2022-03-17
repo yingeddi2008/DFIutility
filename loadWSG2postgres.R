@@ -8,14 +8,14 @@ library(RPostgreSQL)
 library(tidyverse)
 library(data.table)
 
-argopts <- commandArgs(trailingOnly = TRUE) 
+argopts <- commandArgs(trailingOnly = TRUE)
 path = argopts[1]
 con <- dbConnect(dbDriver("PostgreSQL"),
-                 host = "128.135.41.183",
-#                 host = "128.135.41.32",
+#                 host = "128.135.41.183",
+                 host = "128.135.41.32",
                  dbname="dfi_commensal_library",
-#                 use="dfi_admin",
-		 use="ericlittmann",
+                 use="dfi_admin",
+# 		 use="ericlittmann",
                  password="dfibugs")
 
 # dbListTables(con) %>% sort()
@@ -33,7 +33,7 @@ ptbls <- readin_prokka_tables(file.path(path,"prokka"))
 pann <- ptbls[[1]] %>%
   tibble() %>%
   filter(ftype != "gene") %>%
-  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1])) 
+  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1]))
 
 
 if (nrow(pann) > 0 & ldF){
@@ -69,7 +69,7 @@ cgff <- pgff %>%
   tibble() %>%
   filter(type != "gene") %>%
   # distinct(locus_tag, .keep_all = T) %>%
-  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1])) %>% 
+  mutate(seq_id = sapply(str_split(filename, "/"), function(x) x[length(x)-1])) %>%
   # dplyr::count(type)
   select(all_of(gffcols))
 
@@ -86,7 +86,7 @@ rnaref <- "/home/pamerlab/Documents/Eddi/refseq_rna/refseq_rna"
 
 seqs16s <- pann %>%
   filter(grepl("16S riboso", product)) %>%
-  left_join(pseqs) 
+  left_join(pseqs)
 
 map16s <- seqs16s %>%
   select(seq_id, locus_tag)
@@ -102,10 +102,10 @@ system(paste0("/home/pamerlab/Downloads/ncbi-blast-2.10.0+/bin/blastn -query tem
               rnaref, " -outfmt '6 std score qlen qcovs sstrand slen staxid' -max_target_seqs 30 -num_threads 8",
               " -out temp.16S.blastn"))
 
-blast <- readr::read_delim("temp.16S.blastn", delim = "\t", 
-                           col_names = c("qaccver", "saccver", "pident", "length", 
-                                         "mismatch", "gapopen", "qstart", "qend", 
-                                         "sstart", "send","evalue", "bitscore", "score", 
+blast <- readr::read_delim("temp.16S.blastn", delim = "\t",
+                           col_names = c("qaccver", "saccver", "pident", "length",
+                                         "mismatch", "gapopen", "qstart", "qend",
+                                         "sstart", "send","evalue", "bitscore", "score",
                                          "qlen", "qcovus", "sstrand", "slen","staxid")) %>%
   mutate(qcov = (qend - qstart + 1)/qlen * 100,
          iterPos = ifelse(sstrand == "minus", send, sstart),   #switch start and end position in minus
@@ -117,7 +117,7 @@ blast <- readr::read_delim("temp.16S.blastn", delim = "\t",
   left_join(tax, by = c("staxid" = "tax_id")) %>%
   left_join(map16s, by = c("qaccver" = "locus_tag")) %>%
   write_csv("16S.top5.taxonomy.csv")
-  
+
 # load kraken2 -------------------------------------------
 kraken2 <- readin_kraken2_contigs(file.path(path,"kraken2"))
 if(nrow(kraken2) > 0 & ldF){
