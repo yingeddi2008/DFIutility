@@ -47,7 +47,7 @@ for (i in 1:nfn){
     ungroup() %>%
     dplyr::count(filename, sseqid, slen, name = "rawCnt") %>%
     mutate(seq_id = basename(filename),
-           seq_id = sapply(str_split(seq_id,"_"), function(x) x[1]),
+           seq_id = gsub("\\.R[12].[a-zA-Z_]+.dmnd","", seq_id),
            dbsource = sapply(str_split(filename,"/"), function(x) x[sidx])) %>%
     select(seq_id, dbsource, sseqid, slen, rawCnt, filename)
   
