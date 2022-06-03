@@ -25,23 +25,23 @@ library(phyloseq)
 #                                    "*/SM*/cleanFastq/filterTrim.stats.csv"))
 # outfilt_files <- Sys.glob(file.path("/Volumes/dfi-cores/DFI-MMF/MiSeq/projects/*",
 #                    "SM*/cleanFastq/filterTrim.stats.csv"))
-# 
+#
 # fil_list <- lapply(c(filt_files,outfilt_files), addIDs)
 
 fiphy <- readRDS("/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/finalPhy_rdp.merged.wMeta.rds")
 
 # IF NEED TO FIX META FILES
 # meta <- readRDS("/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/meta.merged.rds")
-# 
-# cmeta <- meta %>% 
+#
+# cmeta <- meta %>%
 #   as.matrix() %>%
 #   as.data.frame() %>%
 #   mutate_if(is.factor,as.character)
-# 
+#
 # cmeta <- type_convert(as_tibble(cmeta), col_types = COLTYPES)
 # newmeta <- sample_data(cmeta)
 # sample_names(newmeta) <- newmeta$samplename
-# 
+#
 # newmeta <- sample_data(meta) %>%
 #   as.matrix() %>%
 #   as.data.frame() %>%
@@ -50,10 +50,10 @@ fiphy <- readRDS("/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/final
 #               dplyr::rename(libraryname = pool,
 #                             samplename = sampleid)) %>%
 #   dplyr::select(-X1)
-# 
+#
 # rownames(newmeta) <- newmeta$samplename
 # newmeta <- sample_data(newmeta)
-# 
+#
 # sample_data(fiphy) <- newmeta
 # saveRDS(newmeta, "/Volumes/pamer-lab/DFI_MMF/MiSeq/Bioinformatics/dada2rds/meta.merged.rds")
 # # sample_names(newmeta)
@@ -92,12 +92,12 @@ pltdf <- tmpStatsall %>%
 
 pergg <- pltdf %>%
   ggplot(aes(x = reorder(libraryname,liborder), y = value)) +
-  geom_boxplot(aes(fill = precentage), 
+  geom_boxplot(aes(fill = precentage),
                outlier.shape = 21, outlier.fill = "green",
                outlier.alpha = 0.55, outlier.size = 0.85,
                # position = position_dodge(0.95),
                ) +
-  # stat_summary(aes(group = precentage), 
+  # stat_summary(aes(group = precentage),
   #              fun="mean", color="orange",
   #              geom = "line", linetype = 2,
   #              position = position_dodge(0.95))+
@@ -107,27 +107,34 @@ pergg <- pltdf %>%
   theme(axis.text.x.bottom = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   scale_fill_brewer(palette = "Set1")
 
-totgg <- pltdf %>%
+totgg <- tmpStatsall %>%
+  dplyr::select(samplename, libraryname, reads.in, after, liborder) %>%
+  gather("precentage", "value", -samplename, -libraryname, -liborder) %>%
+  mutate(precentage = factor(precentage, levels = c("reads.in","after"),
+                             labels = c("raw","final high quality"))) %>%
   ggplot(aes(x = reorder(libraryname,liborder))) +
-  geom_boxplot(aes(y = reads.in), 
+  geom_boxplot(aes(y = value, fill = precentage),
                outlier.shape = 21, outlier.fill = "green",
                outlier.alpha = 0.55, outlier.size = 0.85,) +
   geom_hline(yintercept = 5000, linetype = 2, color = "blue") +
   geom_hline(yintercept = 1000, linetype = 2, color = "red") +
   theme_bw() +
-  labs(x = "Pool",
-       y = "Total Raw Reads/Sample") +
-  scale_y_log10() + 
-  theme(axis.text.x.bottom = element_blank())
+  labs(x = "Pool", fill = "Read type",
+       y = "Total Raw/High quality\nReads/Sample") +
+  scale_y_log10() +
+  theme(axis.text.x.bottom = element_blank()) +
+  paletteer::scale_fill_paletteer_d("suffrager::classic")
+
+# totgg
 
 ngg <- saN %>%
   ggplot(aes(x = reorder(libraryname,liborder))) +
-  geom_col(aes(y = sampleN), color = "black", 
+  geom_col(aes(y = sampleN), color = "black",
            alpha = 0.65, width = 0.65, fill = "grey") +
   theme_bw() +
   theme(axis.text.x.bottom = element_blank()) +
   labs(x = " ",
-       y = "# of Samples") 
+       y = "# of Samples")
 
 library(data.table)
 library(gtable)
@@ -136,8 +143,8 @@ library(grid)
 
 wd <- 2.2 + 0.28* nrow(saN)
 
-pdf(paste0("highqual_by_lib.",gsub("-","",lubridate::today()),".pdf"), 
-    height = 7.6, 
+pdf(paste0("highqual_by_lib.",gsub("-","",lubridate::today()),".pdf"),
+    height = 7.6,
     width = wd)
 gg.stack(totgg, ngg, pergg, heights=c(2,1,3),newpage = F)
 dev.off()
@@ -166,5 +173,5 @@ COLTYPES <- cols(
   miseq.data.receive.date= col_date(),
   reads.in = col_integer(),
   reads.out = col_integer(),
-  samplename =col_character() 
+  samplename =col_character()
 )
