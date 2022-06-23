@@ -19,5 +19,5 @@ readin_bracken_reports <- function(directory){
   return(bracken)
 }
 
-kall = readin_bracken_reports(path, saveIntermediate = saveF)
+kall = readin_bracken_reports(path)
 saveRDS(kall, "all.bracken.rds")
