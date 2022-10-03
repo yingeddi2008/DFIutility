@@ -12,7 +12,7 @@ readin_bracken_reports <- function(directory){
   for(i in 1:length(files)) {
     int <- read_tsv(file.path(directory,files[i]), skip = 5) %>%
       mutate(filename = files[i]) %>%
-      mutate(seq_id = gsub("_metagenome.txt", "", filename),
+      mutate(seq_id = gsub("_R1_metagenome.txt", "", filename),
              taxid = sapply(str_split(clade_taxid, "\\|"), function(x) x[length(x)]))
 
     dflist[[i]] <- int
