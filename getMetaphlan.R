@@ -1,7 +1,6 @@
 argopts <- commandArgs(trailingOnly = TRUE)
 path = argopts[1]
 
-library(data.table)
 library(tidyverse)
 
 readin_bracken_reports <- function(directory){
@@ -10,9 +9,10 @@ readin_bracken_reports <- function(directory){
   dflist <- NULL
   
   for(i in 1:length(files)) {
-    int <- read_tsv(file.path(directory,files[i]), skip = 5) %>%
+    int <- read_tsv(file.path(directory,files[i]), skip = 5,
+                    col_types ="ccdcc") %>%
       mutate(filename = files[i]) %>%
-      mutate(seq_id = gsub("_R1_metagenome.txt", "", filename),
+      mutate(seq_id = gsub("_R1_metagenome.txt|_metagenome.txt", "", filename),
              taxid = sapply(str_split(clade_taxid, "\\|"), function(x) x[length(x)]))
 
     dflist[[i]] <- int
