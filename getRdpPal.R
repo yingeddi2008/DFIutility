@@ -35,7 +35,7 @@ getRdpPal <- function(tax) {
   }
 
   tax.dict <- tax %>%
-    select(all_of(ranks)) %>%
+    dplyr::select(all_of(ranks)) %>%
     distinct()
 
   # set all color to gray as base
@@ -44,8 +44,15 @@ getRdpPal <- function(tax) {
                        length.out = nrow(tax.dict)))
 
 # color for each level ------------------------------------------------------------
-  phypal <- tibble(Phylum = c("Proteobacteria","Actinobacteria","Bacteroidetes"),
-                   phycol = c("red","#A77097","#51AB9B"))
+  phypal <- tibble(Phylum = c("Proteobacteria",
+                              "Thermodesulfobacteriota",
+                              "Pseudomonadota",
+                              "Actinobacteria",
+                              "Actinomycetota",
+                              "Bacteroidetes",
+                              "Bacteroidota"),
+                   phycol = c("red","red","red",
+                              "#A77097","#A77097","#51AB9B","#51AB9B"))
   ordpal <- tibble(Order = c("Clostridiales"),
                    ordcol = c("#9C854E"))
   fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Oscillospiraceae","Erysipelotrichaceae",
@@ -74,7 +81,7 @@ getRdpPal <- function(tax) {
       !is.na(phycol) ~ phycol,
       TRUE ~ color)
       ) %>%
-    select(Kingdom:Genus, color) %>%
+    dplyr::select(Kingdom:Genus, color) %>%
     group_split(color)
 
     tax.color <- bind_rows(lapply(tax.split,getShades))
