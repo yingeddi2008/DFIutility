@@ -10,10 +10,16 @@ nanopath <- argoptions[1]
 nanopath <- gsub("/$","",nanopath)
 nanodir <- basename(nanopath)
 
-if (is.na(argoptions[2])){
+if (is.na(argoptions[3])){
   outdir <- getwd()
 } else {
-  outdir <- argoptions[2]
+  outdir <- argoptions[3]
+}
+
+if (is.na(argoptions[2])){
+  name.idx <- 9
+} else {
+  name.idx <- 10
 }
 
 conflict_prefer("n", "dplyr")
@@ -27,17 +33,19 @@ calNx <- function(lenArr, nx = 0.5){
 
 calWidth <- function(nsamples){ return(5 + 1.3*nsamples) }
 
-# nanopath <- "/Volumes/pamer-lab/DFI_MMF/nanopore/Bioinformatics/20210920"
+# nanopath <- "/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics/20240207_ONT67"
 
-# all nanopore long reads ------------------------------------------------
+# stats for nanopore long reads ------------------------------------------------
 nanofais <- Sys.glob(file.path(nanopath,"*/*.fastq.fai"))
-nanofais <- nanofais[grepl("barcode[0-9]{2}.fastq.fai",nanofais)]
+# nanofais <- nanofais[grepl("barcode[0-9]{2}.fastq.fai",nanofais)]
 
 nanotmplen <- NULL
 
+cat(">Reading Nanopore reads indexes....\n")
+
 for (f in nanofais){
 
-  iso <- str_split(f,"/")[[1]][9]
+  iso <- str_split(f,"/")[[1]][name.idx]
 
   nanotmplen[[iso]] <- read_tsv(f, col_names = F) %>%
     select(X2) %>%
@@ -55,6 +63,26 @@ nanostats <- bind_rows(nanotmplen) %>%
             total_bp = sum(X2)) %>%
   mutate(seqType = "Nanopore")
 
+# nanostats in tsv for long reads -----------------------------------------
+
+nstatfais <- Sys.glob(file.path(nanopath,"*/NanoStat.output"))
+
+cat(">Reading NanoStat output....\n")
+
+nstat <- lapply(nstatfais, function(fn) {read_tsv(fn) %>% mutate(filepath = fn,
+                                                        isolate = str_split(fn, "/")[[1]][name.idx])}) %>% 
+  bind_rows()
+
+nstat.org <- nstat %>% 
+  filter(Metrics %in% c("read_length_stdev",
+                        "mean_qual",
+                        "mean_read_length",
+                        "median_qual",
+                        "median_read_length",
+                        "number_of_reads")) %>% 
+  transmute(Metrics, isolate, dataset = as.numeric(dataset)) %>% 
+  spread(Metrics, dataset)
+
 # Illumina -----------------------------------------------------
 
 illufais <- Sys.glob(file.path(nanopath,"*/*/002*.fai"))
@@ -62,9 +90,11 @@ illufais <- Sys.glob(file.path(nanopath,"*/*/002*.fai"))
 
 illutmplen <- NULL
 
+cat(">Reading Illumina contigs indexes....\n")
+
 for (f in illufais){
 
-  iso <- str_split(f,"/")[[1]][9]
+  iso <- str_split(f,"/")[[1]][name.idx]
 
   illutmplen[[f]] <- read_tsv(f, col_names = F) %>%
     select(X2) %>%
@@ -92,9 +122,11 @@ flye.fns <- Sys.glob(file.path(nanopath,"*/flye/assembly_info.txt"))
 
 flye.tmp <- list()
 
+cat(">Reading flye results....\n")
+
 for (flyfn in flye.fns){
   
-  iso <- str_split(flyfn,"/")[[1]][9]
+  iso <- str_split(flyfn,"/")[[1]][name.idx]
   
   tmpflye <- read_tsv(flyfn) %>%
     transmute(contigNo = `#seq_name`,
@@ -122,9 +154,33 @@ for (flyfn in flye.fns){
 
 ### remove unicycler long reads only assembly
 
+# get pilon location if there is any --------------------------------------
+
+pilonfais <- Sys.glob(file.path(nanopath,"*/*/pilon.fasta.fai"))
+
+pilontmplen <- NULL
+
+cat(">Reading pilon results....if any....\n")
+
+for (f in pilonfais){
+  
+  iso <- str_split(f,"/")[[1]][name.idx]
+  
+  pilontmplen[[iso]] <- read_tsv(f, col_names = F) %>%
+    transmute(contigNo= gsub("_pilon","",X1), 
+              pilon.length = X2,
+              pilon.path = gsub(".fai$","",f)) %>%
+    mutate(isolate = iso)
+  
+}
+
+pilon.len <- bind_rows(pilontmplen) %>% 
+  mutate(pilon.path = gsub("/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics","## .", pilon.path))
+
 # summary of the assemblies -----------------------------------------
 sumfn <- Sys.glob(file.path(nanopath,"summary*txt"))
 
+cat(paste0(">Reading in the latest summary file: ",last(sumfn),".....\n"))
 summ <- read_tsv(last(sumfn),
                    col_names = F) %>%
   mutate(path=if_else(grepl("^##",X1), X1, NA_character_)) %>%
@@ -155,19 +211,30 @@ org.summ <- summ %>%
               left_join(bind_rows(flye.tmp))) %>% 
   arrange(isolate, path, 
           desc(length)) %>% 
-  relocate(isolate, type)
+  relocate(isolate, type) %>% 
+  left_join(pilon.len)
+
+cat(paste0(">>Output detailed summary file: ",
+           paste0("detailed.summary.", nanodir,".nano.csv"),
+           ".....\n"))
 
 write_csv(org.summ %>% 
             select(-guppy), 
           file.path(outdir,paste0("detailed.summary.", nanodir,".nano.csv")))
 
 contigstats <- org.summ %>%
-  group_by(path) %>%
+  mutate(int.length = if_else(is.na(pilon.path),
+                              length,
+                              pilon.length),
+         int.path = if_else(is.na(pilon.path),
+                            path,
+                            pilon.path)) %>% # view
+  group_by(int.path) %>%
   summarise(guppy = unique(guppy),
             isolate = unique(isolate),
             type = unique(type),
             nContigs = dplyr::n(),
-            totalLength = sum(length),
+            totalLength = unique(sum(int.length)),
             nCircular = sum(circular == "Yes"),
             goodAssembly = case_when(
               nCircular >= 1 & nContigs <= 5 ~ "Yes",
@@ -218,6 +285,11 @@ nanoplt <- bind_rows(nanotmplen) %>%
 
 wd <- calWidth(nrow(nanostats))
 
+cat(paste0(">>Output plot: ",
+           paste0("nanopore.isolates.hist.",
+                  nanodir,".pdf"),
+           ".....\n"))
+
 ggsave(file.path(outdir,
                  paste0("nanopore.isolates.hist.",
                         nanodir,".pdf")),
@@ -227,6 +299,10 @@ ggsave(file.path(outdir,
 # save out stats in csv ---------------------------------------------------
 
 all.stats <- contigstats %>%
+  dplyr::rename(path = int.path) %>% 
+  left_join(
+    nstat.org
+  ) %>% 
   left_join(
     nanostats %>%
       select(
@@ -251,6 +327,11 @@ all.stats <- contigstats %>%
         illu.total_bp = total_bp
       )
   ) %>%
-  select(-guppy)
+  select(-guppy) %>% 
+  arrange(isolate)
+
+cat(paste0(">>Output final summary file: ",
+           paste0("summary.", nanodir,".csv"),
+           ".....\n"))
 
 write_csv(all.stats, file.path(outdir,paste0("summary.", nanodir,".csv")))
