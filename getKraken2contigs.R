@@ -17,8 +17,7 @@ readin_kraken2_contigs <- function(directory){
   }
   kraken2 <- do.call(rbind,dflist) %>%
     select(contig=V2,taxon=V3,length=V4,filename) %>%
-    mutate(seq_id=gsub("\\.standard\\.txt","",filename),
-           cohort="biobank")
+    mutate(seq_id=gsub("\\.standard\\.txt","",filename))
   return(kraken2)
 }
 
