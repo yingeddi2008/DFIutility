@@ -5,6 +5,8 @@ library(tidyverse)
 library(lubridate)
 library(conflicted)
 
+# nanopath <- "/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics/20240207_ONT67"
+
 argoptions <- commandArgs(trailingOnly = TRUE)
 nanopath <- argoptions[1]
 nanopath <- gsub("/$","",nanopath)
@@ -25,6 +27,7 @@ if (is.na(argoptions[2])){
 conflict_prefer("n", "dplyr")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("rename", "dplyr")
+conflicted::conflicts_prefer(dplyr::filter)
 
 calNx <- function(lenArr, nx = 0.5){
   len.sorted <- rev(sort(lenArr))
@@ -32,8 +35,6 @@ calNx <- function(lenArr, nx = 0.5){
 }
 
 calWidth <- function(nsamples){ return(5 + 1.3*nsamples) }
-
-# nanopath <- "/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics/20240207_ONT67"
 
 # stats for nanopore long reads ------------------------------------------------
 nanofais <- Sys.glob(file.path(nanopath,"*/*.fastq.fai"))
@@ -47,11 +48,14 @@ for (f in nanofais){
 
   iso <- str_split(f,"/")[[1]][name.idx]
 
-  nanotmplen[[iso]] <- read_tsv(f, col_names = F) %>%
+  cat(">>Reading Nanopore reads indexes: ",f, "....\n")
+  
+  nanotmplen[[iso]] <- read_tsv(f, col_names = F, show_col_types = FALSE) %>%
     select(X2) %>%
     mutate(isolate = iso)
 
 }
+cat("\n")
 
 nanostats <- bind_rows(nanotmplen) %>%
   group_by(isolate) %>%
@@ -67,9 +71,10 @@ nanostats <- bind_rows(nanotmplen) %>%
 
 nstatfais <- Sys.glob(file.path(nanopath,"*/NanoStat.output"))
 
-cat(">Reading NanoStat output....\n")
+cat(">Reading NanoStat output....\n\n")
 
-nstat <- lapply(nstatfais, function(fn) {read_tsv(fn) %>% mutate(filepath = fn,
+nstat <- lapply(nstatfais, function(fn) {read_tsv(fn, show_col_types = FALSE) %>% 
+    mutate(filepath = fn,
                                                         isolate = str_split(fn, "/")[[1]][name.idx])}) %>% 
   bind_rows()
 
@@ -86,33 +91,49 @@ nstat.org <- nstat %>%
 # Illumina -----------------------------------------------------
 
 illufais <- Sys.glob(file.path(nanopath,"*/*/002*.fai"))
+
 # illufais <- illufais[grepl("hybridAssemblyTrim",illufais)]
 
 illutmplen <- NULL
 
-cat(">Reading Illumina contigs indexes....\n")
-
-for (f in illufais){
-
-  iso <- str_split(f,"/")[[1]][name.idx]
-
-  illutmplen[[f]] <- read_tsv(f, col_names = F) %>%
-    select(X2) %>%
-    mutate(isolate = iso,
-           file = f,
-           type = if_else(grepl("hybridAssemblyTrim",f),"moretrimmed","noTrim"))
-
+if (length(illufais) > 1){
+  cat(">Reading Illumina contigs indexes....\n\n")
+  
+  for (f in illufais){
+    
+    iso <- str_split(f,"/")[[1]][name.idx]
+    
+    illutmplen[[f]] <- read_tsv(f, col_names = F, show_col_types = FALSE) %>%
+      select(X2) %>%
+      mutate(isolate = iso,
+             file = f,
+             type = if_else(grepl("hybridAssemblyTrim",f),"moretrimmed","noTrim"))
+    
+  }
+  
+  illustats <- bind_rows(illutmplen) %>%
+    group_by(isolate, file, type) %>%
+    summarise(median = median(X2),
+              mean = mean(X2),
+              N50 = calNx(X2),
+              max = max(X2),
+              n=dplyr::n(),
+              total_bp = sum(X2)) %>%
+    mutate(seqType = "Illumina")
+  
+} else {
+  
+  illustats <- tibble(isolate = unique(nanostats$isolate),
+                      file = NA,
+                      type = NA,
+                      seqType = "Illumina",
+                      median = NA,
+                      mean = NA, 
+                      N50 = NA,
+                      max = NA, n = NA, total_bp = NA)
+  
 }
 
-illustats <- bind_rows(illutmplen) %>%
-  group_by(isolate, file, type) %>%
-  summarise(median = median(X2),
-            mean = mean(X2),
-            N50 = calNx(X2),
-            max = max(X2),
-            n=dplyr::n(),
-            total_bp = sum(X2)) %>%
-  mutate(seqType = "Illumina")
 
 # total length of flye and long assembly ----------------------------------
 
@@ -122,13 +143,13 @@ flye.fns <- Sys.glob(file.path(nanopath,"*/flye/assembly_info.txt"))
 
 flye.tmp <- list()
 
-cat(">Reading flye results....\n")
+cat(">Reading flye results....\n\n")
 
 for (flyfn in flye.fns){
   
   iso <- str_split(flyfn,"/")[[1]][name.idx]
   
-  tmpflye <- read_tsv(flyfn) %>%
+  tmpflye <- read_tsv(flyfn, show_col_types = FALSE) %>%
     transmute(contigNo = `#seq_name`,
            length, 
            circular = factor(circ., levels = c("Y","N"),
@@ -147,12 +168,40 @@ for (flyfn in flye.fns){
   
 }
 
-# bind_rows(flye.tmp) %>% 
-#   view
+flye.stat <- bind_rows(flye.tmp)
 
 ## unicycler long reads only ----------------------------------------
 
 ### remove unicycler long reads only assembly
+
+# get gtdbtk and checkM results -------------------------------------------
+
+# hard code:
+
+mp_gt_chckm <- c("flye" = "flyeLong",
+                 "hybrid" = "noTrim",
+                 "hybridTrim" = "moretrimmed",
+                 "pilon" = "flyeLong",
+                 "assembly" = "flyeLong")
+
+cat(">Parsing gtdbtk results....\n\n")
+gtdbfn <- Sys.glob(file.path(nanopath,"*/gtdbtk/classify/gtdbtk.*.summary.tsv"))
+gtdb <- lapply(gtdbfn, function(x) read_tsv(x,
+                                            col_types = c("cccncnnccccccccccccc"),
+                                            show_col_types = FALSE) %>% 
+         mutate(filename = x,
+                isolate = str_split(filename, "/")[[1]][name.idx])) %>% 
+  bind_rows() %>% 
+  mutate(type = mp_gt_chckm[user_genome])
+
+cat(">Parsing checkm2 results....\n\n")
+checkmfn <- Sys.glob(file.path(nanopath,"*/checkm2/quality_report.tsv"))
+
+checkm <- lapply(checkmfn, function(x) read_tsv(x, show_col_types = FALSE) %>% 
+                 mutate(filename = x,
+                        isolate = str_split(filename, "/")[[1]][name.idx])) %>% 
+  bind_rows() %>% 
+  mutate(type = mp_gt_chckm[Name] )
 
 # get pilon location if there is any --------------------------------------
 
@@ -160,29 +209,41 @@ pilonfais <- Sys.glob(file.path(nanopath,"*/*/pilon.fasta.fai"))
 
 pilontmplen <- NULL
 
-cat(">Reading pilon results....if any....\n")
+if (length(pilonfais) >= 1){
+  
+  cat(">Reading pilon results....\n\n")
+  
+  for (f in pilonfais){
+    
+    iso <- str_split(f,"/")[[1]][name.idx]
+    
+    pilontmplen[[iso]] <- read_tsv(f, col_names = F, show_col_types = FALSE) %>%
+      transmute(contigNo= gsub("_pilon","",X1), 
+                pilon.length = X2,
+                pilon.path = gsub(".fai$","",f)) %>%
+      mutate(isolate = iso)
+    
+  }
+  
+  pilon.len <- bind_rows(pilontmplen) %>% 
+    mutate(pilon.path = gsub("/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics","## .", pilon.path))
+  
+} else {
+  
+  cat(">No pilon results to parse! \n\n")
+  pilon.len <- tibble(isolate = unique(nanostats$isolate)) %>% 
+    mutate(pilon.path = NA,
+           pilon.length = NA)
 
-for (f in pilonfais){
-  
-  iso <- str_split(f,"/")[[1]][name.idx]
-  
-  pilontmplen[[iso]] <- read_tsv(f, col_names = F) %>%
-    transmute(contigNo= gsub("_pilon","",X1), 
-              pilon.length = X2,
-              pilon.path = gsub(".fai$","",f)) %>%
-    mutate(isolate = iso)
-  
 }
-
-pilon.len <- bind_rows(pilontmplen) %>% 
-  mutate(pilon.path = gsub("/Volumes/dfi-cores/DFI-MMF/Nanopore/nanopore/Bioinformatics","## .", pilon.path))
 
 # summary of the assemblies -----------------------------------------
 sumfn <- Sys.glob(file.path(nanopath,"summary*txt"))
 
 cat(paste0(">Reading in the latest summary file: ",last(sumfn),".....\n"))
-summ <- read_tsv(last(sumfn),
-                   col_names = F) %>%
+
+summ.raw <- read_tsv(last(sumfn),
+                   col_names = F, show_col_types = FALSE) %>%
   mutate(path=if_else(grepl("^##",X1), X1, NA_character_)) %>%
   fill(path) %>%
   filter(!grepl(X1,pattern="^##")) %>%
@@ -200,19 +261,47 @@ summ <- read_tsv(last(sumfn),
            TRUE ~ "long"),
          circular = if_else(grepl("long", type, ignore.case = T),
                             NA_character_,
-                            circular)) %>% 
-  filter(type != "long")
+                            circular))
 
-org.summ <- summ %>%
-  filter(type != "flyeLong") %>%
-  bind_rows(summ %>%
-              filter(type == "flyeLong") %>%
-              select(-c(length, circular, depth)) %>%
-              left_join(bind_rows(flye.tmp))) %>% 
-  arrange(isolate, path, 
-          desc(length)) %>% 
-  relocate(isolate, type) %>% 
-  left_join(pilon.len)
+# switch to control for long reads only and hybrid assembly ---------------
+
+org.temp <- summ.raw %>%
+    filter(type != "flyeLong") %>%
+    bind_rows(summ.raw %>%
+                filter(type == "flyeLong") %>%
+                select(-c(length, circular, depth)) %>%
+                left_join(flye.stat)) %>% 
+    arrange(isolate, path, 
+            desc(length)) %>% 
+    relocate(isolate, type) %>% 
+    left_join(pilon.len) %>% 
+    left_join(gtdb %>% 
+                # filter(! user_genome %in% c("assembly")) %>% 
+                select(user_genome, isolate, type, 
+                       classification, fastani_reference) %>% 
+                left_join(checkm %>% 
+                            # filter(Name != "flye") %>% 
+                            select(Name, isolate, type, Completeness, 
+                                   Contamination, Genome_Size, 
+                                   GC_Content,Total_Coding_Sequences),
+                          by = c("user_genome" = "Name", "isolate", "type")))
+  
+  org.cnt <- org.temp %>% 
+    distinct(isolate, type, user_genome) %>% 
+    count(isolate, name = "n_type")
+  
+  org.flye <- org.cnt %>% 
+    filter(n_type == 1) %>% 
+    select(-n_type) %>% 
+    left_join(org.temp)
+  
+  org.summ <-org.cnt %>% 
+    filter(n_type > 1) %>% 
+    select(-n_type) %>% 
+    left_join(org.temp) %>% 
+    filter(user_genome != "flye") %>% 
+    bind_rows(org.flye)
+  
 
 cat(paste0(">>Output detailed summary file: ",
            paste0("detailed.summary.", nanodir,".nano.csv"),
@@ -239,7 +328,14 @@ contigstats <- org.summ %>%
             goodAssembly = case_when(
               nCircular >= 1 & nContigs <= 5 ~ "Yes",
               nCircular >= 1 & (nContigs - nCircular) <= 2  & nContigs < 8 ~ "Yes",
-              TRUE ~ "No")) 
+              TRUE ~ "No"),
+            classification = unique(classification),
+            fastani_reference = unique(fastani_reference),
+            Completeness = unique(Completeness),
+            Contamination = unique(Contamination), 
+            Genome_Size = unique(Genome_Size),
+            GC_Content = unique(GC_Content), 
+            Total_Coding_Sequences = unique(Total_Coding_Sequences) ) 
 
 goodIsos <-  contigstats %>%
   filter(goodAssembly == "Yes", 
@@ -250,6 +346,8 @@ goodIsos <-  contigstats %>%
   `$`(isolate)
 
 # combine both and plot ---------------------------------------------------
+
+apal <- c("Nah" = "red", "Good" = "green")
 
 stats <- bind_rows(nanostats, illustats %>% 
                      filter(type == "moretrimmed") %>%
@@ -273,7 +371,7 @@ nanoplt <- bind_rows(nanotmplen) %>%
   theme_bw() +
   scale_x_log10() +
   # scale_y_continuous(trans = "log2") +
-  scale_fill_brewer(palette = "Set1") +
+  scale_fill_manual(values = apal) +
   scale_color_manual(name = "statistics",
                      values = c(median = "#d17b11",
                                 max = "#19cf19",
@@ -328,7 +426,7 @@ all.stats <- contigstats %>%
       )
   ) %>%
   select(-guppy) %>% 
-  arrange(isolate)
+  arrange(isolate) 
 
 cat(paste0(">>Output final summary file: ",
            paste0("summary.", nanodir,".csv"),
