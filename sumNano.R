@@ -170,10 +170,6 @@ for (flyfn in flye.fns){
 
 flye.stat <- bind_rows(flye.tmp)
 
-## unicycler long reads only ----------------------------------------
-
-### remove unicycler long reads only assembly
-
 # get gtdbtk and checkM results -------------------------------------------
 
 # hard code:
