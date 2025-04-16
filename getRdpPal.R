@@ -53,15 +53,12 @@ getRdpPal <- function(tax) {
                               "Bacteroidota"),
                    phycol = c("red","red","red",
                               "#A77097","#A77097","#51AB9B","#51AB9B"))
-  
   clapal <- tibble(Class = c("Clostridia"),
-                   clacol = c("#9C854E"))
-  
+                   clacol = c("#7a683d"))
   ordpal <- tibble(Order = c("Clostridiales", "Eubacteriales"),
                    ordcol = c("#9C854E", "#9C854E"))
-
   fampal <- tibble(Family = c("Lachnospiraceae","Ruminococcaceae","Oscillospiraceae","Erysipelotrichaceae", "Lactobacillaceae", "Staphylococcaceae"),
-                   famcol = c("#EC9B96","#9AAE73","#9AAE73","orange","#3b51a3", "#f1eb25"))
+                   famcol = c("#EC9B96","#9AAE73","#9AAE73","orange","#293a75", "#d4ce20"))
   genpal <- tibble(Genus = c("Enterococcus","Streptococcus","Staphylococcus",
                              "Lactobacillus", "Turicibacter", "Akkermansia"),
                    gencol = c("#129246","#9FB846","#f1eb25", "#3b51a3", "#bf5700", "#63615f"))
