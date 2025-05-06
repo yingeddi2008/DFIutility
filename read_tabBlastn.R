@@ -7,7 +7,7 @@ read_tabBlastn <- function(filename, ident = 85, cov = 85 ){
   CNAMES <- c("qaccver", "saccver", "pident", "length", "mismatch", "gapopen", "qstart", "qend", 
              "sstart", "send","evalue", "bitscore", "score", "qlen", "qcovus", "sstrand", "slen")
   
-  bo <- readr::read_delim(filename, delim = "\t", col_names = F) 
+  bo <- readr::read_tsv(filename, col_names = F) 
   
   colnames(bo) <- CNAMES[1:ncol(bo)]
   
@@ -16,7 +16,8 @@ read_tabBlastn <- function(filename, ident = 85, cov = 85 ){
            iterPos = ifelse(sstrand == "minus", send, sstart),   #switch start and end position in minus
            send = ifelse(sstrand == "minus", sstart, send),
            sstart = ifelse(sstrand == "minus", iterPos, sstart),
-           iterPos = NULL) %>%
+           iterPos = NULL,
+           filename = filename) %>%
     dplyr::filter(pident > ident, qcov > cov)
   
 }
