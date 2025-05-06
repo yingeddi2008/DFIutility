@@ -69,13 +69,16 @@ getRdpPal <- function(tax) {
     left_join(ordpal) %>%
     left_join(fampal) %>%
     # ambiguous genus match
-    # mutate(gencol = case_when(
-    #   grepl("Enterococcus$", Genus) ~ "#129246",
-    #   grepl("Streptococcus$", Genus) ~ "#9FB846",
-    #   grepl("Staphylococcus$", Genus) ~ "#f1eb25",
-    #   TRUE ~ NA_character_
-    # )) %>%
-    left_join(genpal) %>%
+    mutate(gencol = case_when(
+      grepl("Enterococcus$", Genus) ~ "#129246",
+      grepl("Streptococcus$", Genus) ~ "#9FB846",
+      grepl("Staphylococcus$", Genus) ~ "#f1eb25",
+      grepl("Lactobacillus$", Genus) ~ "#3b51a3",
+      grepl("Turicibacter$", Genus) ~ "#bf5700",
+      grepl("Akkermansia$", Genus) ~ "#63615f",
+      TRUE ~ NA_character_
+    )) %>%
+    # left_join(genpal) %>%
     mutate(color = case_when(
       !is.na(gencol) ~ gencol,
       !is.na(famcol) ~ famcol,
