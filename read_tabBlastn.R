@@ -5,7 +5,8 @@ read_tabBlastn <- function(filename, ident = 85, cov = 85 ){
   require(dplyr)
   
   CNAMES <- c("qaccver", "saccver", "pident", "length", "mismatch", "gapopen", "qstart", "qend", 
-             "sstart", "send","evalue", "bitscore", "score", "qlen", "qcovus", "sstrand", "slen")
+             "sstart", "send","evalue", "bitscore", 
+             "score", "qlen", "qcovus", "sstrand", "slen", "staxid")
   
   bo <- readr::read_tsv(filename, col_names = F) 
   
